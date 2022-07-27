@@ -1,22 +1,33 @@
 {
-  "env": {
-    "browser": false,
-    "es6": true,
-    "node": true
-  },
+  "root": true,
   "parser": "@typescript-eslint/parser",
-  "parserOptions": {
-    "project": "tsconfig.json",
-    "sourceType": "module",
-    "ecmaVersion": 2020
-  },
-  "plugins": ["@typescript-eslint", "jest"],
+  "parserOptions": { "project": "./tsconfig.json" },
+  "env": { "es6": true },
+  "ignorePatterns": ["node_modules", "build", "coverage"],
+  "plugins": ["import", "eslint-comments" ],
   "extends": [
     "eslint:recommended",
-    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:eslint-comments/recommended",
     "plugin:@typescript-eslint/recommended",
-    "plugin:jest/recommended",
-    "prettier"
+    "plugin:import/typescript",
+    "prettier",
+    "prettier/@typescript-eslint"
   ],
-  "rules": {}
+  "globals": { "BigInt": true, "console": true, "WebAssembly": true },
+  "rules": {
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "eslint-comments/disable-enable-pair": [
+      "error",
+      { "allowWholeFile": true }
+    ],
+    "eslint-comments/no-unused-disable": "error",
+    "import/order": [
+      "error",
+      { "newlines-between": "always", "alphabetize": { "order": "asc" } }
+    ],
+    "sort-imports": [
+      "error",
+      { "ignoreDeclarationSort": true, "ignoreCase": true }
+    ]
+  }
 }
