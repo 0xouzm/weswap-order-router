@@ -1,0 +1,159 @@
+import Logger from 'bunyan';
+import { Multicall2Provider, Result } from './multicall2-provider';
+import { CurrencyAmount } from '../util/amounts';
+import { Route } from '../routers/router';
+import { BigNumber } from 'ethers';
+import { encodeRouteToPath } from '@uniswap/v3-sdk';
+import _ from 'lodash';
+import { IQuoterV2__factory } from '../types/v3';
+import { QUOTER_V2_ADDRESS } from '../util/addresses';
+import { routeToString } from '../util/routes';
+
+// Quotes can be null (e.g. pool did not have enough liquidity)
+export type AmountQuote = {
+  amount: CurrencyAmount;
+  quote: BigNumber | null;
+  sqrtPriceX96AfterList: BigNumber[] | null;
+  initializedTicksCrossedList: number[] | null;
+  gasEstimate: BigNumber | null;
+};
+
+export type RouteWithQuotes = [Route, AmountQuote[]];
+
+const QUOTE_CHUNKS = 20;
+
+export class QuoteProvider {
+  constructor(
+    private multicall2Provider: Multicall2Provider,
+    private log: Logger
+  ) {}
+
+  async getQuotesManyExactIn(
+    amountIns: CurrencyAmount[],
+    routes: Route[]
+  ): Promise<RouteWithQuotes[]> {
+    const quoteResults = await this.getQuotesManyExactInsData(
+      amountIns,
+      routes
+    );
+
+    const routesQuotes = this.processQuoteResults(
+      quoteResults,
+      routes,
+      amountIns
+    );
+    return routesQuotes;
+  }
+
+  private async getQuotesManyExactInsData(
+    amountIns: CurrencyAmount[],
+    routes: Route[]
+  ): Promise<Result<[BigNumber, BigNumber[], number[], BigNumber]>[]> {
+    const inputs: [string, string][] = _(routes)
+      .flatMap((route) => {
+        const encodedRoute = encodeRouteToPath(route, false);
+        const routeInputs: [string, string][] = amountIns.map((amountIn) => [
+          encodedRoute,
+          `0x${amountIn.quotient.toString(16)}`,
+        ]);
+        return routeInputs;
+      })
+      .value();
+
+    this.log.debug(
+      `About to get quotes for ${inputs.length} different inputs in chunks of ${QUOTE_CHUNKS}.`
+    );
+
+    const inputsChunked = _.chunk(inputs, QUOTE_CHUNKS);
+    const results = await Promise.all(
+      _.map(inputsChunked, async (inputChunk) => {
+        return this.multicall2Provider.callSameFunctionOnContractWithMultipleParams<
+          [string, string],
+          [BigNumber, BigNumber[], number[], BigNumber]
+        >({
+          address: QUOTER_V2_ADDRESS,
+          contractInterface: IQuoterV2__factory.createInterface(),
+          functionName: 'quoteExactInput',
+          functionParams: inputChunk,
+        });
+      })
+    );
+
+    this.validateBlockNumbers(results);
+
+    return _.flatMap(results, (result) => result.results);
+  }
+
+  private processQuoteResults(
+    quoteResults: Result<[BigNumber, BigNumber[], number[], BigNumber]>[],
+    routes: Route[],
+    amounts: CurrencyAmount[]
+  ): RouteWithQuotes[] {
+    const routesQuotes: RouteWithQuotes[] = [];
+
+    const quotesResultsByRoute = _.chunk(quoteResults, amounts.length);
+    for (let i = 0; i < quotesResultsByRoute.length; i++) {
+      const route = routes[i]!;
+      const quoteResults = quotesResultsByRoute[i]!;
+      const quotes: AmountQuote[] = _.map(
+        quoteResults,
+        (
+          quoteResult: Result<[BigNumber, BigNumber[], number[], BigNumber]>,
+          index: number
+        ) => {
+          const amount = amounts[index]!;
+          if (!quoteResult.success) {
+            const { returnData } = quoteResult;
+
+            this.log.debug(
+              { result: returnData },
+              `Unable to get quote for ${routeToString(
+                route
+              )} with amount ${amount.toFixed(2)}`
+            );
+
+            return {
+              amount,
+              quote: null,
+              sqrtPriceX96AfterList: null,
+              gasEstimate: null,
+              initializedTicksCrossedList: null,
+            };
+          }
+
+          return {
+            amount,
+            quote: quoteResult.result[0],
+            sqrtPriceX96AfterList: quoteResult.result[1],
+            initializedTicksCrossedList: quoteResult.result[2],
+            gasEstimate: quoteResult.result[3],
+          };
+        }
+      );
+      routesQuotes.push([route, quotes]);
+    }
+
+    return routesQuotes;
+  }
+
+  private validateBlockNumbers(
+    results: {
+      blockNumber: BigNumber;
+      results: Result<[BigNumber, BigNumber[], number[], BigNumber]>[];
+    }[]
+  ) {
+    const blockNumbers = _.map(results, (result) => result.blockNumber);
+    const allBlockNumbersSame = _.every(
+      blockNumbers,
+      (blockNumber) => blockNumber.toString() == blockNumbers[0]!.toString()
+    );
+
+    if (!allBlockNumbersSame) {
+      this.log.error(
+        { blocks: _.uniq(_.map(blockNumbers, (b) => b.toString())) },
+        'Quotes returned from different blocks.'
+      );
+      throw new Error('Quotes returned from different blocks.');
+    }
+  }
+}

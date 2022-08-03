@@ -1,5 +1,5 @@
 {
-  "name": "@weswap/smart-order-router",
+  "name": "@0xouzm/smart-order-router",
   "version": "1.0.1",
   "description": "Weswap Smart Order Router",
   "main": "build/main/index.js",
