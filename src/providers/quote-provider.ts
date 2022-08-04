@@ -1,13 +1,15 @@
-import Logger from 'bunyan';
-import { Multicall2Provider, Result } from './multicall2-provider';
-import { CurrencyAmount } from '../util/amounts';
-import { Route } from '../routers/router';
-import { BigNumber } from 'ethers';
 import { encodeRouteToPath } from '@uniswap/v3-sdk';
+import Logger from 'bunyan';
+import { BigNumber } from 'ethers';
 import _ from 'lodash';
+
+import { Route } from '../routers/router';
 import { IQuoterV2__factory } from '../types/v3';
 import { QUOTER_V2_ADDRESS } from '../util/addresses';
+import { CurrencyAmount } from '../util/amounts';
 import { routeToString } from '../util/routes';
+
+import { Multicall2Provider, Result } from './multicall2-provider';
 
 // Quotes can be null (e.g. pool did not have enough liquidity)
 export type AmountQuote = {
@@ -79,7 +81,7 @@ export class QuoteProvider {
       })
     );
 
-    this.validateBlockNumbers(results);
+    // this.validateBlockNumbers(results);
 
     return _.flatMap(results, (result) => result.results);
   }

@@ -410,7 +410,7 @@ export class DefaultRouter implements IRouter {
 
   private getBestSwapRouteBy(
     routeType: RouteType,
-    percentToQuotes: { [p: number]: RouteWithValidQuote[] },
+    percentToQuotes: { [percent: number]: RouteWithValidQuote[] },
     percents: number[],
     by: (rq: RouteWithValidQuote) => CurrencyAmount
   ): SwapRoute | undefined {
@@ -465,6 +465,7 @@ export class DefaultRouter implements IRouter {
       return undefined;
     }
 
+    // Start with our first best swap as being the quote where we send 100% of token through a single route.
     let bestQuote = by(percentToSortedQuotes[100][0]!);
     let bestSwap: RouteWithValidQuote[] = [percentToSortedQuotes[100][0]!];
 

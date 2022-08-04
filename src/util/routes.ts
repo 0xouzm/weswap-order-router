@@ -1,6 +1,7 @@
-import { Route, RouteAmount } from '../routers/router';
-import _ from 'lodash';
 import { Pool } from '@uniswap/v3-sdk';
+import _ from 'lodash';
+
+import { Route, RouteAmount } from '../routers/router';
 
 export const routeToString = (route: Route): string => {
   const routeStr = [];
