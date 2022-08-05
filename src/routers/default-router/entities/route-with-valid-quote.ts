@@ -1,10 +1,12 @@
-import { CurrencyAmount } from '../../../util/amounts';
-import { BigNumber } from 'ethers';
-import Logger from 'bunyan';
-import { GasModel } from '../gas-models';
 import { Token } from '@uniswap/sdk-core';
-import { Route } from '../../router';
+import Logger from 'bunyan';
+import { BigNumber } from 'ethers';
+
+import { CurrencyAmount } from '../../../util/amounts';
 import { routeToString } from '../../../util/routes';
+import { Route } from '../../router';
+import { GasModel } from '../gas-models';
+
 
 export type RouteWithValidQuoteParams = {
   amount: CurrencyAmount;

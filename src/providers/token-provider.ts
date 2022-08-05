@@ -109,4 +109,14 @@ export class TokenProvider {
     return !!this.getTokenIfExists(chainId, symbol);
   }
 
+  public getTokensIfExists(chainId: ChainId, ...symbols: string[]): Token[] {
+    const tokens: Token[] = _(symbols)
+      .map((symbol: string) => {
+        return this.getTokenIfExists(chainId, symbol);
+      })
+      .compact()
+      .value();
+
+    return tokens;
+  }
 }

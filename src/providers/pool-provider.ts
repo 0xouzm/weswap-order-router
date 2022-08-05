@@ -5,7 +5,6 @@ import { BigNumber } from 'ethers';
 import _ from 'lodash';
 
 import {
-  IUniswapV3Factory__factory,
   IUniswapV3PoolState__factory
 } from '../types/v3';
 import { V3_CORE_FACTORY_ADDRESS } from '../util/addresses';
@@ -26,6 +25,14 @@ type ISlot0 = {
 
 type ILiquidity = { liquidity: BigNumber };
 
+export type PoolAccessor = {
+  getPool: (
+    tokenA: Token,
+    tokenB: Token,
+    feeAmount: FeeAmount
+  ) => Pool | undefined;
+  getAllPools: () => Pool[];
+};
 export class PoolProvider {
   constructor(
     private multicall2Provider: Multicall2Provider,
@@ -164,11 +171,4 @@ export class PoolProvider {
   }
 }
 
-export type PoolAccessor = {
-  getPool: (
-    tokenA: Token,
-    tokenB: Token,
-    feeAmount: FeeAmount
-  ) => Pool | undefined;
-  getAllPools: () => Pool[];
-};
+

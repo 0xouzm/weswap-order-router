@@ -14,6 +14,7 @@ import { ChainId } from '../util/chains';
 import { DefaultRouter } from './default-router';
 import { HeuristicGasModelFactory } from './default-router/gas-models/heuristic-gas-model';
 import { IRouter } from './router';
+import { V3InterfaceRouter } from './v3-interface-router';
 
 
 export enum RouterId {
@@ -44,16 +45,15 @@ export const RouterFactory = (
         tokenProvider,
         log,
       });
-    //  todo add other routers
-    // case RouterId.V3Interface:
-    //   return new V3InterfaceRouter({
-    //     chainId,
-    //     multicall2Provider,
-    //     poolProvider: new PoolProvider(multicall2Provider, log),
-    //     quoteProvider: new QuoteProvider(multicall2Provider, log),
-    //     tokenProvider,
-    //     log,
-    //   });
+     case RouterId.V3Interface:
+       return new V3InterfaceRouter({
+         chainId,
+         multicall2Provider,
+         poolProvider: new PoolProvider(multicall2Provider, log),
+         quoteProvider: new QuoteProvider(multicall2Provider, log),
+         tokenProvider,
+         log,
+       });
 
     default:
       throw new Error(`Implementation of router ${routerStr} not found.`);

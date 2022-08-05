@@ -47,6 +47,25 @@ export class QuoteProvider {
     return routesQuotes;
   }
 
+  public async getQuotesManyExactOut(
+    amountOuts: CurrencyAmount[],
+    routes: Route[]
+  ): Promise<RouteWithQuotes[]> {
+    const quoteResults = await this.getQuotesManyExactOutsData(
+      amountOuts,
+      routes
+    );
+
+    const routesQuotes = this.processQuoteResults(
+      quoteResults,
+      routes,
+      amountOuts
+    );
+
+    return routesQuotes;
+  }
+
+
   private async getQuotesManyExactInsData(
     amountIns: CurrencyAmount[],
     routes: Route[]
@@ -85,6 +104,44 @@ export class QuoteProvider {
 
     return _.flatMap(results, (result) => result.results);
   }
+  private async getQuotesManyExactOutsData(
+    amountOuts: CurrencyAmount[],
+    routes: Route[]
+  ): Promise<Result<[BigNumber, BigNumber[], number[], BigNumber]>[]> {
+    const inputs: [string, string][] = _(routes)
+      .flatMap((route) => {
+        const routeInputs: [string, string][] = amountOuts.map((amountOut) => [
+          encodeRouteToPath(route, true),
+          `0x${amountOut.quotient.toString(16)}`,
+        ]);
+        return routeInputs;
+      })
+      .value();
+
+    this.log.debug(
+      `About to get quotes for ${inputs.length} different inputs in chunks of ${QUOTE_CHUNKS}.`
+    );
+
+    const inputsChunked = _.chunk(inputs, QUOTE_CHUNKS);
+    const results = await Promise.all(
+      _.map(inputsChunked, async (inputChunk) => {
+        return this.multicall2Provider.callSameFunctionOnContractWithMultipleParams<
+          [string, string],
+          [BigNumber, BigNumber[], number[], BigNumber] // amountIn, sqrtPriceX96AfterList, initializedTicksCrossedList, gasEstimate
+          >({
+          address: QUOTER_V2_ADDRESS,
+          contractInterface: IQuoterV2__factory.createInterface(),
+          functionName: 'quoteExactOutput',
+          functionParams: inputChunk,
+        });
+      })
+    );
+
+    this.validateBlockNumbers(results);
+
+    return _.flatMap(results, (result) => result.results);
+  }
+
 
   private processQuoteResults(
     quoteResults: Result<[BigNumber, BigNumber[], number[], BigNumber]>[],
