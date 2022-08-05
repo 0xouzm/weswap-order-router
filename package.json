@@ -1,17 +1,13 @@
 {
   "name": "@0xouzm/smart-order-router",
-  "version": "1.0.2",
+  "version": "1.2.1",
   "description": "Weswap Smart Order Router",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
   "module": "build/module/index.js",
   "license": "MIT",
   "keywords": [],
-  "bin": {
-    "weswap-smart-order-router": "./bin/run"
-  },
   "scripts": {
-    "run": "./bin/run -i ETH -o DAI -a 100 --exactIn --debug",
     "compile-v3-types": "npx typechain --target ethers-v5 --out-dir src/types/v3 './node_modules/@uniswap/?(v3-core|v3-periphery)/artifacts/contracts/**/*.json'",
     "compile-external-types": "npx typechain --target ethers-v5 --out-dir src/types/other 'src/abis/**/*.json'",
     "build": "run-p compile-v3-types compile-external-types && run-p build:*",
@@ -28,10 +24,6 @@
   },
   "dependencies": {
     "@bitauth/libauth": "^1.17.1",
-    "@oclif/command": "^1.8.0",
-    "@oclif/config": "^1.17.0",
-    "@oclif/dev-cli": "^1.26.0",
-    "@oclif/plugin-help": "^3.2.2",
     "@typechain/ethers-v5": "^7.0.0",
     "@types/bunyan": "^1.8.6",
     "@types/lodash": "^4.14.168",
